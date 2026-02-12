@@ -1,15 +1,28 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
-import { ChevronRight, Ruler, Weight, User as UserIcon, Calendar, Check } from 'lucide-react';
+import { ChevronRight, Ruler, Weight, User as UserIcon, Calendar, Check, Activity } from 'lucide-react';
 import clsx from 'clsx';
 
 const steps = [
   { id: 'welcome', title: "Beat the Sugar Spike", subtitle: "Track. Understand. Change." },
   { id: 'age', title: "How old are you?", icon: Calendar, field: 'age', min: 10, max: 100, unit: 'years' },
-  { id: 'gender', title: "What's your gender?", icon: UserIcon, field: 'gender', options: ['Male', 'Female', 'Other'] }, // Simplified for quick prototype
+  { id: 'gender', title: "What's your gender?", icon: UserIcon, field: 'gender', options: ['Male', 'Female', 'Other'] }, 
   { id: 'height', title: "How tall are you?", icon: Ruler, field: 'height', min: 100, max: 250, unit: 'cm' },
   { id: 'weight', title: "How much do you weigh?", icon: Weight, field: 'weight', min: 30, max: 200, unit: 'kg' },
+  { 
+      id: 'activity', 
+      title: "How active are you?", 
+      icon: Activity, 
+      field: 'activityLevel', 
+      options: [
+          { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
+          { value: 'light', label: 'Light', desc: 'Light exercise 1-3 days/week' },
+          { value: 'moderate', label: 'Moderate', desc: 'Moderate exercise 3-5 days/week' },
+          { value: 'active', label: 'Active', desc: 'Hard exercise 6-7 days/week' },
+          { value: 'very_active', label: 'Very Active', desc: 'Hard physical job / 2x training' }
+      ]
+  },
 ];
 
 const Onboarding = () => {
@@ -19,7 +32,8 @@ const Onboarding = () => {
     age: 25,
     gender: 'Male',
     height: 170,
-    weight: 70
+    weight: 70,
+    activityLevel: 'moderate'
   });
 
   const handleNext = async () => {
@@ -94,6 +108,24 @@ const Onboarding = () => {
                                     >
                                         {opt}
                                         {formData.gender === opt && <Check className="inline ml-2 w-5 h-5" />}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : stepData.field === 'activityLevel' ? (
+                             <div className="grid grid-cols-1 gap-3">
+                                {stepData.options.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => updateField('activityLevel', opt.value)}
+                                        className={clsx(
+                                            "p-4 rounded-xl border transition-all text-left",
+                                            formData.activityLevel === opt.value
+                                                ? "border-purple-500 bg-purple-500/10 text-white" 
+                                                : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
+                                        )}
+                                    >
+                                        <div className="font-bold text-lg">{opt.label}</div>
+                                        <div className="text-sm text-zinc-500">{opt.desc}</div>
                                     </button>
                                 ))}
                             </div>

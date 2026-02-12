@@ -46,30 +46,7 @@ const VoiceLogger = ({ onLog }) => {
   };
 
   const processCommand = (text) => {
-    const lowerText = text.toLowerCase();
-    let type = null;
-    let intensity = 3; // Default
-
-    // Simple keyword matching
-    if (lowerText.includes('chai') || lowerText.includes('tea')) {
-      type = 'Chai';
-      intensity = 2;
-    } else if (lowerText.includes('sweet') || lowerText.includes('dessert') || lowerText.includes('cake')) {
-      type = 'Sweet';
-      intensity = 4;
-    } else if (lowerText.includes('cold') || lowerText.includes('drink') || lowerText.includes('soda')) {
-      type = 'Cold Drink';
-      intensity = 5;
-    } else if (lowerText.includes('snack') || lowerText.includes('chips') || lowerText.includes('biscuit')) {
-      type = 'Snack';
-      intensity = 3;
-    }
-
-    if (type) {
-      onLog(type, null, intensity); // Pass type and optional icon (null here), intensity
-    } else {
-        alert(`Could not recognize a sugar item in "${text}". Try saying "Chai", "Sweet", "Cold Drink", or "Snack".`);
-    }
+    onLog({ name: text, isCustom: true });
   };
 
   if (!isSupported) return null;

@@ -15,19 +15,26 @@ const Dashboard = () => {
   const [modalData, setModalData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [healthData, setHealthData] = useState({ steps: 0, sleep: 0, hr: 0, isSyncing: false });
 
-  const fetchLogs = async () => {
-    try {
-      if (!user?.deviceId) return;
-      const res = await axios.get(`${API_URL}/logs/${user.deviceId}`);
-      setLogs(res.data);
-    } catch (err) {
-      console.error("Error fetching logs:", err);
-    }
+  // Passive Sync Simulation
+  const simulateSync = () => {
+    setHealthData(prev => ({ ...prev, isSyncing: true }));
+    setTimeout(() => {
+        setHealthData({
+            steps: Math.floor(Math.random() * 8000) + 2000,
+            sleep: (Math.random() * 3 + 5).toFixed(1), // 5-8 hours
+            hr: Math.floor(Math.random() * 20) + 65, // 65-85 bpm
+            isSyncing: false,
+            lastSync: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        toast.success("Health Data Synced!");
+    }, 2000);
   };
 
   React.useEffect(() => {
     fetchLogs();
+    simulateSync(); // Auto sync on load
   }, [user?.deviceId]);
 
   // Quick Log Items
@@ -36,28 +43,42 @@ const Dashboard = () => {
     { id: 'sweet', name: 'Sweet / Dessert', icon: Cookie, intensity: 5, color: 'bg-pink-500' },
     { id: 'cold_drink', name: 'Cold Drink', icon: Droplet, intensity: 4, color: 'bg-blue-500' },
     { id: 'snack', name: 'Packaged Snack', icon: Zap, intensity: 3, color: 'bg-yellow-500' },
+    { id: 'camera', name: 'Snap a Photo', icon: Camera, intensity: null, color: 'bg-indigo-500', isImage: true },
   ];
 
-  const handleLog = async (item) => {
+  const fileInputRef = React.useRef(null);
+
+  const handleLog = async (item, file = null) => {
+    if (item?.isImage && !file) {
+      fileInputRef.current.click();
+      return;
+    }
+
     setLoading(true);
     try {
-      // Mock data for passive sync simulation
-      const mockSteps = Math.floor(Math.random() * 10000); 
-      const mockSleep = Math.floor(Math.random() * 5) + 4; // 4-9 hours
+      const formData = new FormData();
+      formData.append('deviceId', user.deviceId);
+      formData.append('steps', healthData.steps);
+      formData.append('sleepHours', parseFloat(healthData.sleep));
 
-      const res = await axios.post(`${API_URL}/logs`, {
-        deviceId: user.deviceId,
-        type: item.name,
-        intensity: item.intensity,
-        steps: mockSteps,
-        sleepHours: mockSleep
+      if (file) {
+        formData.append('file', file);
+      } else {
+        formData.append('type', item.name);
+        formData.append('intensity', item.intensity);
+        if (item.isCustom) {
+          formData.append('isCustomText', 'true');
+        }
+      }
+
+      const res = await axios.post(`${API_URL}/logs`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      // Update local user state
       refreshUser();
       fetchLogs();
-
-      // Show Feedback
       setModalData(res.data);
       setIsModalOpen(true);
     } catch (error) {
@@ -67,28 +88,15 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
-  
-  const handleCompleteAction = async (logId) => {
-      try {
-          const res = await axios.post(`${API_URL}/logs/${logId}/complete`);
-          toast.success(`Action Completed! +7 XP`);
-          // Refresh to show updated points and hide the action
-          refreshUser();
-          fetchLogs();
-      } catch (error) {
-          console.error("Error completing action:", error);
-          toast.error(error.response?.data?.message || "Failed to complete action");
-      }
-  };
 
-  const handleVoiceLog = (type, icon, intensity) => {
-      // Find matching item or create ad-hoc
-      const item = logItems.find(i => i.name.toLowerCase().includes(type.toLowerCase())) || {
-          name: type,
-          intensity: intensity || 3
-      };
-      handleLog(item);
+  const onFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleLog(null, file);
+    }
   };
+  
+  // ... handleCompleteAction ...
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 relative overflow-hidden">
@@ -99,33 +107,64 @@ const Dashboard = () => {
       <header className="fixed top-0 w-full z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50 p-4">
         <div className="flex justify-between items-center max-w-md mx-auto">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs">
-              {user.gender === 'Male' ? 'M' : 'F'}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs uppercase">
+              {user.gender?.charAt(0) || 'U'}
             </div>
             <div className="flex flex-col">
-                <span className="text-xs text-zinc-400">Level {Math.floor(user.points / 100) + 1}</span>
-                <span className="text-sm font-bold">{user.points} XP</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Level {Math.floor(user.points / 100) + 1}</span>
+                <span className="text-sm font-bold leading-none">{user.points} XP</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">
-            <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-            <span className="font-bold text-orange-400">{user.streak}</span>
+          <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+                <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
+                <span className="font-bold text-orange-400 text-sm">{user.streak}</span>
+              </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto pt-24 px-4 space-y-8">
+      <main className="max-w-md mx-auto pt-24 px-4 space-y-6">
         
+        {/* Passive Sync Card */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-xl">
+             <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Health Sync</h3>
+                </div>
+                <button 
+                    onClick={simulateSync}
+                    className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-md text-zinc-400 transition-colors"
+                >
+                    {healthData.isSyncing ? 'Syncing...' : 'Sync Now'}
+                </button>
+             </div>
+             
+             <div className="grid grid-cols-3 gap-3">
+                 <div className="flex flex-col items-center p-3 bg-zinc-800/50 rounded-2xl border border-zinc-800">
+                     <Zap className="w-4 h-4 text-yellow-500 mb-2" />
+                     <span className="text-lg font-bold">{healthData.isSyncing ? '--' : healthData.steps}</span>
+                     <span className="text-[10px] text-zinc-500 uppercase">Steps</span>
+                 </div>
+                 <div className="flex flex-col items-center p-3 bg-zinc-800/50 rounded-2xl border border-zinc-800">
+                     <Droplet className="w-4 h-4 text-blue-500 mb-2" />
+                     <span className="text-lg font-bold">{healthData.isSyncing ? '--' : healthData.hr}</span>
+                     <span className="text-[10px] text-zinc-500 uppercase">BPM</span>
+                 </div>
+                 <div className="flex flex-col items-center p-3 bg-zinc-800/50 rounded-2xl border border-zinc-800">
+                     <Coffee className="w-4 h-4 text-purple-500 mb-2" />
+                     <span className="text-lg font-bold">{healthData.isSyncing ? '--' : healthData.sleep}h</span>
+                     <span className="text-[10px] text-zinc-500 uppercase">Sleep</span>
+                 </div>
+             </div>
+        </section>
+
         {/* Hero / CTA */}
-        <section className="text-center space-y-4">
-            <div className="space-y-2">
-                <h1 className="text-2xl font-bold">What did you have?</h1>
-                <p className="text-zinc-500 text-sm">Tap to log or use voice.</p>
-            </div>
-            
-            {/* Voice Logger */}
+        <section className="text-center space-y-4 pt-4">
+            <h2 className="text-2xl font-bold">What did you have?</h2>
             <VoiceLogger onLog={handleVoiceLog} />
         </section>
 
@@ -236,6 +275,33 @@ const Dashboard = () => {
              </motion.div>
         )}
 
+        {/* Badges Section */}
+        {user.badges?.length > 0 && (
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 text-zinc-500 px-2">
+                    <Trophy className="w-4 h-4" />
+                    <span className="text-sm font-medium uppercase tracking-wider">Your Badges</span>
+                </div>
+                <div className="flex flex-wrap gap-3 px-2">
+                    {user.badges.map((badge, i) => (
+                        <motion.div 
+                            key={i}
+                            whileHover={{ scale: 1.1 }}
+                            className="flex flex-col items-center gap-1"
+                            title={badge.name}
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-2xl shadow-lg">
+                                {badge.icon || '🏅'}
+                            </div>
+                            <span className="text-[10px] text-zinc-500 max-w-[50px] text-center leading-tight truncate">
+                                {badge.name}
+                            </span>
+                        </motion.div>
+                    ))}
+                </div>
+            </section>
+        )}
+
         {/* Recent History */}
         <div className="pt-2">
             <div className="flex items-center gap-2 text-zinc-500 mb-4 px-2">
@@ -276,6 +342,15 @@ const Dashboard = () => {
         </div>
 
       </main>
+
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={onFileChange} 
+        accept="image/*,audio/*" 
+        className="hidden" 
+      />
 
       {/* Modal */}
       <LogModal 

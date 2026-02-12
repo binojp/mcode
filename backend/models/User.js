@@ -38,6 +38,22 @@ const userSchema = mongoose.Schema(
     lastLogDate: {
       type: Date,
     },
+    activityLevel: {
+      type: String, // 'sedentary', 'light', 'moderate', 'active', 'very_active'
+      default: 'moderate'
+    },
+    targetSugar: {
+      type: Number, // calculated daily limit in grams
+      default: 30
+    },
+    bmi: {
+      type: Number,
+    },
+    badges: [{
+      name: String,
+      icon: String,
+      date: { type: Date, default: Date.now }
+    }],
   },
   {
     timestamps: true,

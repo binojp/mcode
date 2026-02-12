@@ -6,7 +6,7 @@ const User = require('../models/User');
 // @route   POST /api/users
 // @access  Public
 router.post('/', async (req, res) => {
-  const { deviceId, age, gender, height, weight } = req.body;
+  const { deviceId, age, gender, height, weight, activityLevel } = req.body;
 
   if (!deviceId) {
     return res.status(400).json({ message: 'Device ID is required' });
@@ -19,6 +19,13 @@ router.post('/', async (req, res) => {
       return res.json(user);
     }
 
+    let bmi;
+    if (height && weight) {
+      const heightInMeters = height / 100;
+      bmi = weight / (heightInMeters * heightInMeters);
+      bmi = Math.round(bmi * 10) / 10; // Round to 1 decimal
+    }
+
     // Create new user
     user = await User.create({
       deviceId,
@@ -26,6 +33,8 @@ router.post('/', async (req, res) => {
       gender,
       height,
       weight,
+      activityLevel: activityLevel || 'moderate',
+      bmi,
     });
 
     res.status(201).json(user);

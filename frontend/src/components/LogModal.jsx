@@ -72,6 +72,21 @@ const LogModal = ({ isOpen, onClose, data }) => {
                         )}
                     </div>
 
+                    {/* New Badge Celebration */}
+                    {data?.newBadge && (
+                        <motion.div 
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="bg-yellow-500/20 border border-yellow-500/50 rounded-2xl p-4 mb-6 w-full flex items-center gap-4"
+                        >
+                            <div className="text-3xl">🏅</div>
+                            <div className="text-left">
+                                <div className="text-yellow-500 font-bold text-xs uppercase tracking-widest">New Badge Unlocked!</div>
+                                <div className="text-sm font-bold text-white">{data.newBadge}</div>
+                            </div>
+                        </motion.div>
+                    )}
+
                     {/* Insight */}
                     <div className="w-full text-left">
                         <InsightCard 
