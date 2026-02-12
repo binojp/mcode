@@ -104,6 +104,10 @@ router.post('/', async (req, res) => {
       action
     });
 
+    // Update log with the generated action
+    log.action = action;
+    await log.save();
+
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
@@ -121,4 +125,40 @@ router.get('/:deviceId', async (req, res) => {
     }
 });
 
-module.exports = router;
+// @desc    Mark action as completed
+// @route   POST /api/logs/:id/complete
+// @access  Public
+router.post('/:id/complete', async (req, res) => {
+    try {
+        const log = await Log.findById(req.params.id);
+        if (!log) {
+            return res.status(404).json({ message: 'Log not found' });
+        }
+
+        if (log.actionCompleted) {
+            return res.status(400).json({ message: 'Action already completed' });
+        }
+
+        // Check if within 30 minutes
+        const diff = (new Date() - new Date(log.createdAt)) / (1000 * 60);
+        if (diff > 30) {
+             return res.status(400).json({ message: 'Action expired (must complete within 30 mins)' });
+        }
+
+        log.actionCompleted = true;
+        await log.save();
+
+        const user = await User.findOne({ deviceId: log.userId });
+        if (user) {
+            user.points += 7;
+            await user.save();
+        }
+
+        res.json({ message: 'Action completed', points: user ? user.points : 0 });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+});
+
+    module.exports = router;

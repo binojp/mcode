@@ -14,6 +14,21 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [logs, setLogs] = useState([]);
+
+  const fetchLogs = async () => {
+    try {
+      if (!user?.deviceId) return;
+      const res = await axios.get(`${API_URL}/logs/${user.deviceId}`);
+      setLogs(res.data);
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchLogs();
+  }, [user?.deviceId]);
 
   // Quick Log Items
   const logItems = [
@@ -40,6 +55,7 @@ const Dashboard = () => {
 
       // Update local user state
       refreshUser();
+      fetchLogs();
 
       // Show Feedback
       setModalData(res.data);
@@ -50,6 +66,19 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  const handleCompleteAction = async (logId) => {
+      try {
+          const res = await axios.post(`${API_URL}/logs/${logId}/complete`);
+          toast.success(`Action Completed! +7 XP`);
+          // Refresh to show updated points and hide the action
+          refreshUser();
+          fetchLogs();
+      } catch (error) {
+          console.error("Error completing action:", error);
+          toast.error(error.response?.data?.message || "Failed to complete action");
+      }
   };
 
   const handleVoiceLog = (type, icon, intensity) => {
@@ -165,6 +194,31 @@ const Dashboard = () => {
             </div>
         </section>
 
+        {/* Actionable Insights Section */}
+        {logs.length > 0 && !logs[0].actionCompleted && logs[0].action && (
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-indigo-900/30 border border-indigo-500/30 p-4 rounded-2xl relative overflow-hidden"
+            >
+                <div className="absolute top-0 right-0 p-3 opacity-20">
+                    <Zap className="w-16 h-16 text-indigo-400" />
+                </div>
+                <h4 className="font-bold text-indigo-200 mb-2 flex items-center gap-2">
+                    <Zap className="w-4 h-4" /> Suggested Action
+                </h4>
+                <p className="text-sm text-zinc-300 mb-4 pr-8">
+                    {logs[0].action}
+                </p>
+                <button 
+                    onClick={() => handleCompleteAction(logs[0]._id)}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-sm transition-colors shadow-lg shadow-indigo-500/20"
+                >
+                    Complete (+7 XP)
+                </button>
+            </motion.div>
+        )}
+
         {/* Signup / Premium CTA (Optional) */}
         {!user.email && user.streak > 2 && (
              <motion.div 
@@ -188,8 +242,36 @@ const Dashboard = () => {
                 <History className="w-4 h-4" />
                 <span className="text-sm font-medium uppercase tracking-wider">Recent Logs</span>
             </div>
-             <div className="text-center py-6 border border-dashed border-zinc-800 rounded-xl text-zinc-600 text-sm">
-                Your activity history will build up here.
+             <div className="space-y-3">
+                {logs.length === 0 ? (
+                    <div className="text-center py-6 border border-dashed border-zinc-800 rounded-xl text-zinc-600 text-sm">
+                        Your activity history will build up here.
+                    </div>
+                ) : (
+                    logs.map((log) => (
+                        <div key={log._id} className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", 
+                                    log.type.includes('Chai') ? 'bg-orange-900/50 text-orange-400' :
+                                    log.type.includes('Sweet') ? 'bg-pink-900/50 text-pink-400' :
+                                    log.type.includes('Cold') ? 'bg-blue-900/50 text-blue-400' :
+                                    'bg-yellow-900/50 text-yellow-400'
+                                )}>
+                                    {log.type.charAt(0)}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{log.type}</span>
+                                    <span className="text-xs text-zinc-500">
+                                        {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="text-xs font-bold text-zinc-500">
+                                {log.intensity > 3 ? 'High Sugar' : 'Moderate'}
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
 

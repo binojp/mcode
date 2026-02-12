@@ -19,6 +19,13 @@ const logSchema = mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    action: {
+      type: String, // The suggested action text
+    },
+    actionCompleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

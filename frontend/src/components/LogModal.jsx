@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import { playSuccessSound } from '../utils/soundUtils';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Star, X } from 'lucide-react';
-import InsightCard from './InsightCard';
+import { X, Check, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import InsightCard from './InsightCard';
 
 const LogModal = ({ isOpen, onClose, data }) => {
   useEffect(() => {
@@ -14,8 +15,8 @@ const LogModal = ({ isOpen, onClose, data }) => {
         origin: { y: 0.6 },
         colors: ['#a855f7', '#3b82f6', '#ffffff']
       });
-      // Play sound (simulated with console for now as browser policies block auto-audio often, 
-      // but in real app we'd use new Audio('/success.mp3').play())
+      // Play sound
+      playSuccessSound();
     }
   }, [isOpen, data]);
 
