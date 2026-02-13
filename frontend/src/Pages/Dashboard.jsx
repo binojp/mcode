@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { motion } from 'framer-motion';
-import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History } from 'lucide-react';
+import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History, Camera } from 'lucide-react';
 import axios from 'axios';
 import LogModal from '../components/LogModal';
 import clsx from 'clsx';
@@ -32,9 +32,36 @@ const Dashboard = () => {
     }, 2000);
   };
 
+  const fetchLogs = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/logs/${user.deviceId}`);
+      setLogs(res.data);
+    } catch (error) {
+      console.error("Fetch logs error:", error);
+    }
+  };
+
+  const handleCompleteAction = async (logId) => {
+    try {
+      const res = await axios.post(`${API_URL}/logs/${logId}/complete`);
+      toast.success(res.data.message);
+      refreshUser();
+      fetchLogs();
+    } catch (error) {
+      console.error("Complete action error:", error);
+      toast.error(error.response?.data?.message || "Failed to complete action");
+    }
+  };
+
+  const handleVoiceLog = (data) => {
+    handleLog(data);
+  };
+
   React.useEffect(() => {
-    fetchLogs();
-    simulateSync(); // Auto sync on load
+    if (user?.deviceId) {
+        fetchLogs();
+        simulateSync(); // Auto sync on load
+    }
   }, [user?.deviceId]);
 
   // Quick Log Items
