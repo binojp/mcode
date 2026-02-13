@@ -15,7 +15,7 @@ export const UserProvider = ({ children }) => {
   // Use VITE_API_URL from .env, fallback to localhost if not set
   // Configure Axios base URL
   // Use VITE_API_URL from .env, fallback to localhost if not set
-  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
+  const API_URL = (import.meta.env.VITE_API_URL) + '/api';
 
   useEffect(() => {
     const fetchAppContent = async () => {
