@@ -8,6 +8,7 @@ export const useUser = () => useContext(UserContext);
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [appContent, setAppContent] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Configure Axios base URL
@@ -17,6 +18,15 @@ export const UserProvider = ({ children }) => {
   const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
 
   useEffect(() => {
+    const fetchAppContent = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/app-content`);
+        setAppContent(res.data);
+      } catch (error) {
+        console.error("Error fetching app content:", error);
+      }
+    };
+
     const checkUser = async () => {
       const storedDeviceId = localStorage.getItem('sugarSpike_deviceId');
       
@@ -35,6 +45,7 @@ export const UserProvider = ({ children }) => {
       setLoading(false);
     };
 
+    fetchAppContent();
     checkUser();
   }, []);
 
@@ -97,6 +108,7 @@ export const UserProvider = ({ children }) => {
 
   const value = {
     user,
+    appContent,
     loading,
     signup,
     refreshUser,

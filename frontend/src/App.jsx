@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
+import Account from './pages/Account';
+import History from './pages/History';
 import { UserProvider, useUser } from './context/UserContext';
 import { Toaster } from 'react-hot-toast';
 
@@ -23,6 +25,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/onboarding" element={user ? <Navigate to="/" replace /> : <Onboarding />} />
+      <Route path="/account" element={<Account />} />
+      <Route path="/history" element={<History />} />
       <Route path="/" element={
         <ProtectedRoute>
           <Dashboard />

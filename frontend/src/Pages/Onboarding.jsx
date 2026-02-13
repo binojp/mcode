@@ -26,7 +26,7 @@ const steps = [
 ];
 
 const Onboarding = () => {
-  const { signup } = useUser();
+  const { signup, appContent } = useUser();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     age: 25,
@@ -70,11 +70,11 @@ const Onboarding = () => {
             {stepData.id === 'welcome' ? (
                 <div className="text-center space-y-6 mt-10">
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                        Beat the Sugar Spike
+                        {appContent?.onboarding?.title || "Beat the Sugar Spike"}
                     </h1>
                     <p className="text-zinc-400 text-lg">
-                        Real-time feedback for your sugar habits. <br/>
-                        No signup. No judgment.
+                        {appContent?.onboarding?.subtitle || "Real-time feedback for your sugar habits."} <br/>
+                        {appContent?.description || "No signup. No judgment."}
                     </p>
                     <div className="pt-8">
                         <button 

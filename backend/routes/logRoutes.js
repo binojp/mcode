@@ -60,10 +60,17 @@ router.post('/', upload, async (req, res) => {
     
     // Default values if not provided/derived
     if (!type) {
+        const fallbacks = {
+            image: ['AI Visual Scan', 'Photo Capture', 'Image Analysis'],
+            audio: ['Voice Snippet', 'Audio Log', 'Voice Memo'],
+            text: ['Quick Entry', 'Text Note', 'Manual Log']
+        };
+        
         if (req.file) {
-            type = req.file.mimetype.startsWith('image/') ? 'Image Log' : 'Audio Log';
+            const list = req.file.mimetype.startsWith('image/') ? fallbacks.image : fallbacks.audio;
+            type = list[Math.floor(Math.random() * list.length)];
         } else {
-            type = 'General Log';
+            type = fallbacks.text[Math.floor(Math.random() * fallbacks.text.length)];
         }
     }
     intensity = intensity || 3;
@@ -163,8 +170,9 @@ router.post('/', upload, async (req, res) => {
       action
     });
 
-    // Update log with the generated action
+    // Update log with the generated action and insight
     log.action = action;
+    log.insight = insight;
     await log.save();
 
   } catch (error) {

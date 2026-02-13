@@ -22,6 +22,9 @@ const logSchema = mongoose.Schema(
     action: {
       type: String, // The suggested action text
     },
+    insight: {
+      type: String, // The scientific insight text
+    },
     actionCompleted: {
       type: Boolean,
       default: false,

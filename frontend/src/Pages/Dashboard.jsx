@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { motion } from 'framer-motion';
-import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History, Camera, Sparkles } from 'lucide-react';
+import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History, Camera, Sparkles, ArrowLeft, CheckCircle2, GlassWater, Apple, Pizza, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import LogModal from '../components/LogModal';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
-
 import VoiceLogger from '../components/VoiceLogger';
-import SignupModal from '../components/SignupModal';
+
+const iconMap = {
+  Coffee, Cookie, Droplet, Zap, Flame, Activity, GlassWater, Apple, Pizza, Camera
+};
 
 const Dashboard = () => {
-  const { user, API_URL, refreshUser } = useUser();
+  const navigate = useNavigate();
+  const { user, appContent, API_URL, refreshUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [logs, setLogs] = useState([]);
   const [healthData, setHealthData] = useState({ steps: 0, sleep: 0, hr: 0, isSyncing: false });
+  const fileInputRef = useRef(null);
 
   // Passive Sync Simulation
   const simulateSync = () => {
@@ -59,24 +63,6 @@ const Dashboard = () => {
     handleLog(data);
   };
 
-  React.useEffect(() => {
-    if (user?.deviceId) {
-        fetchLogs();
-        simulateSync(); // Auto sync on load
-    }
-  }, [user?.deviceId]);
-
-  // Quick Log Items
-  const logItems = [
-    { id: 'chai', name: 'Chai / Coffee', icon: Coffee, intensity: 2, color: 'bg-orange-500' },
-    { id: 'sweet', name: 'Sweet / Dessert', icon: Cookie, intensity: 5, color: 'bg-pink-500' },
-    { id: 'cold_drink', name: 'Cold Drink', icon: Droplet, intensity: 4, color: 'bg-blue-500' },
-    { id: 'snack', name: 'Packaged Snack', icon: Zap, intensity: 3, color: 'bg-yellow-500' },
-    { id: 'camera', name: 'Snap a Photo', icon: Camera, intensity: null, color: 'bg-indigo-500', isImage: true },
-  ];
-
-  const fileInputRef = React.useRef(null);
-
   const handleLog = async (item, file = null) => {
     if (item?.isImage && !file) {
       fileInputRef.current.click();
@@ -107,12 +93,8 @@ const Dashboard = () => {
         }
       }
 
-      console.log("Logging with data:", Object.fromEntries(formData.entries()));
-
       const res = await axios.post(`${API_URL}/logs`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       refreshUser();
@@ -133,8 +115,34 @@ const Dashboard = () => {
       handleLog(null, file);
     }
   };
-  
-  // ... handleCompleteAction ...
+
+  useEffect(() => {
+    if (user?.deviceId) {
+        fetchLogs();
+        simulateSync(); // Auto sync on load
+    }
+  }, [user?.deviceId]);
+
+  // Quick Log Items
+  const defaultLogItems = [
+    { id: 'chai', name: 'Chai / Coffee', icon: Coffee, intensity: 2, color: 'bg-orange-500' },
+    { id: 'sweet', name: 'Sweet / Dessert', icon: Cookie, intensity: 5, color: 'bg-pink-500' },
+    { id: 'cold_drink', name: 'Cold Drink', icon: Droplet, intensity: 4, color: 'bg-blue-500' },
+    { id: 'snack', name: 'Packaged Snack', icon: Zap, intensity: 3, color: 'bg-yellow-500' },
+  ];
+
+  const logItems = appContent?.logItems 
+    ? [
+        ...appContent.logItems.map(item => ({
+          ...item,
+          icon: iconMap[item.icon] || Sparkles
+        })),
+        { id: 'camera', name: 'Snap a Photo', icon: Camera, intensity: null, color: 'bg-indigo-500', isImage: true }
+      ]
+    : [
+        ...defaultLogItems,
+        { id: 'camera', name: 'Snap a Photo', icon: Camera, intensity: null, color: 'bg-indigo-500', isImage: true }
+      ];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 relative overflow-hidden">
@@ -271,69 +279,80 @@ const Dashboard = () => {
             </div>
         </section>
 
-        {/* Actionable Insights Section - Cause -> Effect */}
+        {/* Actionable Insights Section - Scientific Cause -> Effect */}
         {logs.length > 0 && logs[0].insight && (
             <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-indigo-900/30 border border-indigo-500/30 p-5 rounded-3xl relative overflow-hidden"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="group relative"
             >
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Zap className="w-16 h-16 text-indigo-400" />
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/10 to-blue-500/20 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
                 
-                <div className="flex items-center gap-2 text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-3">
-                    <Sparkles className="w-3 h-3" />
-                    <span>AI Insight</span>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="relative pl-4 border-l-2 border-indigo-500/50">
-                        <p className="text-sm text-zinc-200 leading-relaxed font-medium italic">
-                            "{logs[0].insight}"
-                        </p>
+                <div className="relative bg-zinc-900/40 border border-indigo-500/20 p-6 rounded-[2.5rem] overflow-hidden backdrop-blur-md">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity translate-x-4 -translate-y-4">
+                        <Sparkles className="w-24 h-24 text-indigo-400" />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-indigo-400" />
+                        </div>
+                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">Scientific Insight</span>
                     </div>
 
-                    {!logs[0].actionCompleted && logs[0].action && (
-                        <div className="space-y-3 pt-2">
-                            <p className="text-xs text-zinc-400">
-                                Suggested Action: <span className="text-zinc-200">{logs[0].action}</span>
-                            </p>
-                             <button 
-                                onClick={() => handleCompleteAction(logs[0]._id)}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-2xl text-xs transition-colors shadow-lg shadow-indigo-500/20"
-                            >
-                                Complete (+7 XP)
-                            </button>
-                        </div>
-                    )}
+                    <div className="space-y-6">
+                        <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-medium italic pr-6 first-letter:text-2xl first-letter:font-black first-letter:text-indigo-400 first-letter:mr-1">
+                            "{logs[0].insight}"
+                        </p>
+
+                        {!logs[0].actionCompleted && logs[0].action && (
+                            <div className="space-y-4 pt-2 border-t border-zinc-800/50">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Corrective Protocol</span>
+                                    <span className="text-[9px] font-bold px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg">High Impact</span>
+                                </div>
+                                <button 
+                                    onClick={() => handleCompleteAction(logs[0]._id)}
+                                    className="w-full bg-white text-black font-black py-4 rounded-2xl text-xs transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-white/5 flex items-center justify-center gap-2 group/btn"
+                                >
+                                    <span>{logs[0].action}</span>
+                                    <ArrowLeft className="w-3 h-3 rotate-180 group-hover:translate-x-1 transition-transform" />
+                                </button>
+                                <p className="text-[9px] text-center text-zinc-600 font-medium">Complete this to earn +7 XP and stabilize your spike.</p>
+                            </div>
+                        )}
+                        
+                        {logs[0].actionCompleted && (
+                             <div className="flex items-center gap-2 text-emerald-400 font-bold text-[10px] uppercase tracking-widest pt-2">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Metabolic Action Complete</span>
+                             </div>
+                        )}
+                    </div>
                 </div>
             </motion.div>
         )}
 
-        {/* Signup / Premium CTA - Optimized "Upgrade" Nudge */}
-        {!user.email && logs.length >= 3 && (
-             <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-zinc-900 to-zinc-950 border border-zinc-800 p-6 rounded-3xl relative overflow-hidden group"
-             >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-purple-500/10 transition-colors" />
-                
-                <div className="relative flex items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <h4 className="font-bold text-base text-zinc-100 italic">Want deeper insights & rewards?</h4>
-                        <p className="text-xs text-zinc-500">Enable history across devices & unlock advanced features.</p>
+        {/* Navigation & History Section */}
+        <div className="grid grid-cols-1 gap-4">
+            <button 
+                onClick={() => navigate('/history')}
+                className="w-full bg-zinc-900/30 border border-zinc-800/80 p-6 rounded-[2.5rem] flex items-center justify-between group hover:bg-zinc-900/60 transition-all active:scale-[0.99]"
+            >
+                <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 bg-zinc-800/50 rounded-2xl flex items-center justify-center text-zinc-500 group-hover:text-purple-400 transition-all group-hover:rotate-6 shadow-inner">
+                        <History className="w-5 h-5" />
                     </div>
-                    <button 
-                        onClick={() => setIsSignupModalOpen(true)}
-                        className="flex-shrink-0 bg-white text-black text-xs px-5 py-2.5 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/5"
-                    >
-                        Upgrade
-                    </button>
+                    <div className="text-left space-y-1">
+                        <h4 className="font-black text-sm text-zinc-200 italic tracking-tight">Activity Journal</h4>
+                        <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">View Detailed AI Trends</p>
+                    </div>
                 </div>
-             </motion.div>
-        )}
+                <div className="p-3 bg-zinc-800/30 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowLeft className="w-4 h-4 rotate-180 text-zinc-400" />
+                </div>
+            </button>
+        </div>
 
         {/* Badges Section */}
         {user.badges?.length > 0 && (
@@ -417,11 +436,6 @@ const Dashboard = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         data={modalData} 
-      />
-
-      <SignupModal 
-        isOpen={isSignupModalOpen} 
-        onClose={() => setIsSignupModalOpen(false)} 
       />
     </div>
   );
