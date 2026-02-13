@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { motion } from 'framer-motion';
-import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History, Camera } from 'lucide-react';
+import { Flame, Droplet, Coffee, Cookie, Zap, Trophy, History, Camera, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import LogModal from '../components/LogModal';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 
 import VoiceLogger from '../components/VoiceLogger';
+import SignupModal from '../components/SignupModal';
 
 const Dashboard = () => {
   const { user, API_URL, refreshUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [logs, setLogs] = useState([]);
   const [healthData, setHealthData] = useState({ steps: 0, sleep: 0, hr: 0, isSyncing: false });
 
@@ -81,22 +83,31 @@ const Dashboard = () => {
       return;
     }
 
+    if (!user?.deviceId) {
+      toast.error("User not found. Please re-login.");
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('deviceId', user.deviceId);
-      formData.append('steps', healthData.steps);
-      formData.append('sleepHours', parseFloat(healthData.sleep));
+      formData.append('steps', healthData.steps || 0);
+      formData.append('sleepHours', parseFloat(healthData.sleep) || 0);
 
       if (file) {
         formData.append('file', file);
-      } else {
+      } else if (item) {
         formData.append('type', item.name);
-        formData.append('intensity', item.intensity);
+        if (item.intensity !== null && item.intensity !== undefined) {
+          formData.append('intensity', Number(item.intensity));
+        }
         if (item.isCustom) {
           formData.append('isCustomText', 'true');
         }
       }
+
+      console.log("Logging with data:", Object.fromEntries(formData.entries()));
 
       const res = await axios.post(`${API_URL}/logs`, formData, {
         headers: {
@@ -109,8 +120,8 @@ const Dashboard = () => {
       setModalData(res.data);
       setIsModalOpen(true);
     } catch (error) {
-      console.error("Log error:", error);
-      toast.error("Failed to log. Try again.");
+      console.error("Log error details:", error.response?.data || error.message);
+      toast.error(error.response?.data?.message || "Failed to log. Try again.");
     } finally {
       setLoading(false);
     }
@@ -260,45 +271,67 @@ const Dashboard = () => {
             </div>
         </section>
 
-        {/* Actionable Insights Section */}
-        {logs.length > 0 && !logs[0].actionCompleted && logs[0].action && (
+        {/* Actionable Insights Section - Cause -> Effect */}
+        {logs.length > 0 && logs[0].insight && (
             <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-indigo-900/30 border border-indigo-500/30 p-4 rounded-2xl relative overflow-hidden"
+                className="bg-indigo-900/30 border border-indigo-500/30 p-5 rounded-3xl relative overflow-hidden"
             >
-                <div className="absolute top-0 right-0 p-3 opacity-20">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
                     <Zap className="w-16 h-16 text-indigo-400" />
                 </div>
-                <h4 className="font-bold text-indigo-200 mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> Suggested Action
-                </h4>
-                <p className="text-sm text-zinc-300 mb-4 pr-8">
-                    {logs[0].action}
-                </p>
-                <button 
-                    onClick={() => handleCompleteAction(logs[0]._id)}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-sm transition-colors shadow-lg shadow-indigo-500/20"
-                >
-                    Complete (+7 XP)
-                </button>
+                
+                <div className="flex items-center gap-2 text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-3">
+                    <Sparkles className="w-3 h-3" />
+                    <span>AI Insight</span>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="relative pl-4 border-l-2 border-indigo-500/50">
+                        <p className="text-sm text-zinc-200 leading-relaxed font-medium italic">
+                            "{logs[0].insight}"
+                        </p>
+                    </div>
+
+                    {!logs[0].actionCompleted && logs[0].action && (
+                        <div className="space-y-3 pt-2">
+                            <p className="text-xs text-zinc-400">
+                                Suggested Action: <span className="text-zinc-200">{logs[0].action}</span>
+                            </p>
+                             <button 
+                                onClick={() => handleCompleteAction(logs[0]._id)}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-2xl text-xs transition-colors shadow-lg shadow-indigo-500/20"
+                            >
+                                Complete (+7 XP)
+                            </button>
+                        </div>
+                    )}
+                </div>
             </motion.div>
         )}
 
-        {/* Signup / Premium CTA (Optional) */}
-        {!user.email && user.streak > 2 && (
+        {/* Signup / Premium CTA - Optimized "Upgrade" Nudge */}
+        {!user.email && logs.length >= 3 && (
              <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/30 p-4 rounded-xl flex items-center justify-between"
+                className="bg-gradient-to-r from-zinc-900 to-zinc-950 border border-zinc-800 p-6 rounded-3xl relative overflow-hidden group"
              >
-                <div>
-                    <h4 className="font-bold text-sm text-blue-200">Unlock Advanced Insights?</h4>
-                    <p className="text-xs text-blue-300/70">Save your streak forever.</p>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-purple-500/10 transition-colors" />
+                
+                <div className="relative flex items-center justify-between gap-6">
+                    <div className="space-y-1">
+                        <h4 className="font-bold text-base text-zinc-100 italic">Want deeper insights & rewards?</h4>
+                        <p className="text-xs text-zinc-500">Enable history across devices & unlock advanced features.</p>
+                    </div>
+                    <button 
+                        onClick={() => setIsSignupModalOpen(true)}
+                        className="flex-shrink-0 bg-white text-black text-xs px-5 py-2.5 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/5"
+                    >
+                        Upgrade
+                    </button>
                 </div>
-                <button className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-lg shadow-blue-500/20">
-                    Connect
-                </button>
              </motion.div>
         )}
 
@@ -384,6 +417,11 @@ const Dashboard = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         data={modalData} 
+      />
+
+      <SignupModal 
+        isOpen={isSignupModalOpen} 
+        onClose={() => setIsSignupModalOpen(false)} 
       />
     </div>
   );

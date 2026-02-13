@@ -26,9 +26,10 @@ const getInsight = async (type, intensity, steps, sleepHours, user) => {
       - Sleep Last Night: ${sleepHours}h
 
       Task:
-      1. Analyze the health impact of this specific sugar event given the context (time, activity, sleep).
-      2. Provide a SHORT, scientific "Cause-Effect" insight (max 2 sentences).
-      3. Suggest ONE immediate, doable corrective action (e.g., walk, water, protein).
+      1. Analyze the health impact of this specific sugar event given the context (time, activity, sleep, BMI).
+      2. Provide a VERY SHORT, simple "Cause -> Effect" insight (max 15 words).
+         Example: "High sugar after low sleep leads to intense afternoon crashes."
+      3. Suggest ONE immediate, doable corrective action.
 
       Format response as JSON:
       {
@@ -82,7 +83,10 @@ const analyzeImage = async (imageBuffer, mimeType) => {
 
   } catch (error) {
     console.error("Gemini Image Error:", error);
-    return null;
+    return {
+      item: "Image Log",
+      intensity: 3
+    };
   }
 };
 
@@ -114,7 +118,10 @@ const analyzeAudio = async (audioBuffer, mimeType) => {
 
     } catch (error) {
         console.error("Gemini Audio Error:", error);
-        return null;
+        return {
+            item: "Audio Log",
+            intensity: 3
+        };
     }
 }
 
@@ -139,7 +146,10 @@ const analyzeText = async (text) => {
 
     } catch (error) {
         console.error("Gemini Text Error:", error);
-        return null;
+        return {
+            item: text || "Text Log",
+            intensity: 3
+        };
     }
 }
 

@@ -67,11 +67,41 @@ export const UserProvider = ({ children }) => {
      }
   }
 
+  const upgradeUser = async (email, password) => {
+    if (!user?.deviceId) return;
+    try {
+      const res = await axios.post(`${API_URL}/users/upgrade`, {
+        deviceId: user.deviceId,
+        email,
+        password
+      });
+      setUser(res.data);
+      return res.data;
+    } catch (error) {
+      console.error("Error upgrading user:", error);
+      throw error;
+    }
+  };
+
+  const loginUser = async (email, password) => {
+    try {
+      const res = await axios.post(`${API_URL}/users/login`, { email, password });
+      setUser(res.data);
+      localStorage.setItem('sugarSpike_deviceId', res.data.deviceId);
+      return res.data;
+    } catch (error) {
+      console.error("Error logging in:", error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
     signup,
     refreshUser,
+    upgradeUser,
+    loginUser,
     API_URL
   };
 

@@ -49,6 +49,14 @@ const userSchema = mongoose.Schema(
     bmi: {
       type: Number,
     },
+    email: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow multiple users with no email (null)
+    },
+    password: {
+      type: String,
+    },
     badges: [{
       name: String,
       icon: String,

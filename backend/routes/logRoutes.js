@@ -15,6 +15,12 @@ const upload = multer({ storage }).single('file'); // Expect field name 'file'
 router.post('/', upload, async (req, res) => {
   try {
     let { deviceId, type, intensity, steps, sleepHours, isCustomText } = req.body;
+    
+    // Ensure numeric types
+    intensity = intensity ? Number(intensity) : undefined;
+    steps = steps ? Number(steps) : 0;
+    sleepHours = sleepHours ? Number(sleepHours) : 0;
+
     let imageAnalysis = null;
     let audioAnalysis = null;
 
@@ -45,13 +51,24 @@ router.post('/', upload, async (req, res) => {
       }
     }
 
-    if (!deviceId || !type) { // Intensity might be derived
-        // If still missing after analysis
-      return res.status(400).json({ message: 'Missing required fields (deviceId, type/file)' });
+    if (!deviceId) {
+      return res.status(400).json({ message: 'Missing required field: deviceId' });
+    }
+    if (!type && !req.file) {
+      return res.status(400).json({ message: 'Missing required field: type or file' });
     }
     
-    // Default intensity if not provided/derived
+    // Default values if not provided/derived
+    if (!type) {
+        if (req.file) {
+            type = req.file.mimetype.startsWith('image/') ? 'Image Log' : 'Audio Log';
+        } else {
+            type = 'General Log';
+        }
+    }
     intensity = intensity || 3;
+    
+    console.log("Final log data:", { deviceId, type, intensity });
 
     const user = await User.findOne({ deviceId });
 

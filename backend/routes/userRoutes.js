@@ -61,4 +61,56 @@ router.get('/:deviceId', async (req, res) => {
   }
 });
 
+// @desc    Upgrade Anonymous User to Registered
+// @route   POST /api/users/upgrade
+// @access  Public
+router.post('/upgrade', async (req, res) => {
+  const { deviceId, email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ deviceId });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.email) {
+      return res.status(400).json({ message: 'User already registered' });
+    }
+
+    // Check if email already taken
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    user.email = email;
+    user.password = password; // In a real app, hash this!
+    await user.save();
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+});
+
+// @desc    Login User
+// @route   POST /api/users/login
+// @access  Public
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email, password });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+});
+
 module.exports = router;
