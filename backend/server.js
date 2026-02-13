@@ -9,8 +9,6 @@ connectDB();
 
 const app = express();
 
-const cors = require('cors');
-
 const allowedOrigins = [
   'https://glycoflow.pages.dev',
   // add others if needed
